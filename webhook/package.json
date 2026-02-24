@@ -1,0 +1,23 @@
+{
+  "name": "webhook-retry-tester",
+  "version": "2.0.0",
+  "description": "Test tool to verify webhook retry behavior on failed deliveries - multi-project support",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test:fail-3": "node dist/index.js --fail-count 3 --fail-status 503",
+    "test:fail-forever": "node dist/index.js --fail-forever --fail-status 500",
+    "test:timeout": "node dist/index.js --fail-count 2 --timeout 35000",
+    "test:4xx": "node dist/index.js --fail-count 1 --fail-status 400"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

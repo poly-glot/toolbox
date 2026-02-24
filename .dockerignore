@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.git/
+.github/
+.idea/
+.vscode/
+.devcontainer/
+.DS_Store
+*.md
+task.md
+deployment/
+webhook/

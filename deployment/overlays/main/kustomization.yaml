@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+namespace: toolbox
+
+patches:
+  - path: deployment.yaml
+  - path: ingress.yaml
+
+configMapGenerator:
+  - behavior: replace
+    envs:
+      - config.properties
+    name: app-config
+
+images:
+  - name: app:latest
+    newName: lhr.ocir.io/lrhvckxzwf3l/toolbox
+    newTag: latest

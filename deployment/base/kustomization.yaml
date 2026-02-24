@@ -1,0 +1,13 @@
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - ingress.yaml
+  - service.yaml
+
+namespace: toolbox
+
+configMapGenerator:
+  - name: app-config
+
+nameSuffix:
+  -v1
