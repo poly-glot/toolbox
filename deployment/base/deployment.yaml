@@ -21,7 +21,7 @@ spec:
             - name: PORT
               value: "8080"
             - name: APP_ROUTES
-              value: "webhook:3001"
+              value: "webhook:3001,proxy:3002"
             - name: REDIS_HOST
               valueFrom:
                 configMapKeyRef:

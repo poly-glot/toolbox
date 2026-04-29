@@ -7,7 +7,11 @@ echo "[entrypoint] Starting toolbox apps..."
 echo "[entrypoint] Starting webhook on port 3001..."
 PORT=3001 node /app/apps/webhook/dist/index.js &
 
-# Wait a moment for apps to start
+# Start proxy app in background
+echo "[entrypoint] Starting proxy on port 3002..."
+PORT=3002 node /app/apps/proxy/dist/index.js &
+
+# Wait a moment for backends to start
 sleep 1
 
 # Start gateway (foreground - main process)
