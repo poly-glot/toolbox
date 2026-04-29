@@ -14,49 +14,28 @@
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
 
-  "initializeCommand": "docker compose -f .devcontainer/docker-compose.yml up -d",
-  "shutdownAction": "stopCompose",
-
   "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "username": "vscode",
+      "userUid": "1001",
+      "userGid": "1001"
+    },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
-  "runArgs": [
-    "--network=devcontainer_toolbox-network"
-  ],
-
   "forwardPorts": [
     8080,
-    3001,
-    6379,
-    5540,
-    3306,
-    8081
+    3001
   ],
   "portsAttributes": {
     "8080": { "label": "Gateway", "onAutoForward": "notify" },
-    "3001": { "label": "Webhook App", "onAutoForward": "silent" },
-    "6379": { "label": "Redis", "onAutoForward": "silent" },
-    "5540": { "label": "RedisInsight", "onAutoForward": "notify" },
-    "3306": { "label": "MySQL", "onAutoForward": "silent" },
-    "8081": { "label": "phpMyAdmin", "onAutoForward": "notify" }
+    "3001": { "label": "Webhook App", "onAutoForward": "silent" }
   },
 
   "postCreateCommand": "npm install",
-
-  "containerEnv": {
-    "REDIS_HOST": "redis",
-    "REDIS_PORT": "6379",
-    "REDIS_PASSWORD": "",
-    "MYSQL_HOST": "mysql",
-    "MYSQL_PORT": "3306",
-    "MYSQL_USER": "root",
-    "MYSQL_PASSWORD": "toolbox",
-    "MYSQL_DATABASE": "toolbox"
-  },
 
   "remoteUser": "vscode",
 

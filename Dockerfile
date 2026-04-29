@@ -20,6 +20,7 @@ COPY package.json package-lock.json* ./
 # Copy all workspace package.json files
 COPY apps/gateway/package.json apps/gateway/package.json
 COPY apps/webhook/package.json apps/webhook/package.json
+COPY apps/proxy/package.json apps/proxy/package.json
 
 # Install all workspace dependencies
 RUN npm ci --ignore-scripts
@@ -48,6 +49,7 @@ COPY package.json package-lock.json* ./
 # Copy workspace package.json files
 COPY apps/gateway/package.json apps/gateway/package.json
 COPY apps/webhook/package.json apps/webhook/package.json
+COPY apps/proxy/package.json apps/proxy/package.json
 
 # Install production dependencies only
 RUN npm ci --omit=dev --ignore-scripts
@@ -55,6 +57,7 @@ RUN npm ci --omit=dev --ignore-scripts
 # Copy built output from builder
 COPY --from=builder /app/apps/gateway/dist apps/gateway/dist
 COPY --from=builder /app/apps/webhook/dist apps/webhook/dist
+COPY --from=builder /app/apps/proxy/dist apps/proxy/dist
 
 # Copy entrypoint
 COPY entrypoint.sh /app/entrypoint.sh
@@ -67,6 +70,6 @@ EXPOSE 8080
 
 # Environment defaults
 ENV PORT=8080
-ENV APP_ROUTES=webhook:3001
+ENV APP_ROUTES=webhook:3001,proxy:3002
 
 ENTRYPOINT ["/app/entrypoint.sh"]
