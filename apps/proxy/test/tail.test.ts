@@ -77,4 +77,59 @@ describe("createRing", () => {
     const r = createRing(3);
     expect(r.snapshot()).toEqual([]);
   });
+
+  it("clear empties the buffer", () => {
+    const r = createRing(3);
+    r.push(entry("1"));
+    r.push(entry("2"));
+    r.clear();
+    expect(r.snapshot()).toEqual([]);
+  });
+
+  it("clear notifies clear-subscribers", () => {
+    const r = createRing(3);
+    const fn = vi.fn();
+    r.subscribeClear(fn);
+    r.clear();
+    expect(fn).toHaveBeenCalledOnce();
+  });
+
+  it("clear does not notify entry-subscribers", () => {
+    const r = createRing(3);
+    const entryFn = vi.fn();
+    r.subscribe(entryFn);
+    r.push(entry("1"));
+    r.clear();
+    expect(entryFn).toHaveBeenCalledOnce();
+  });
+
+  it("after clear, ring accepts new entries normally", () => {
+    const r = createRing(3);
+    r.push(entry("1"));
+    r.push(entry("2"));
+    r.clear();
+    r.push(entry("3"));
+    r.push(entry("4"));
+    expect(r.snapshot().map((e) => e.id)).toEqual(["3", "4"]);
+  });
+
+  it("subscribeClear unsubscribe stops further notifications", () => {
+    const r = createRing(3);
+    const fn = vi.fn();
+    const unsub = r.subscribeClear(fn);
+    r.clear();
+    unsub();
+    r.clear();
+    expect(fn).toHaveBeenCalledOnce();
+  });
+
+  it("clear-subscriber error does not break other clear-subscribers", () => {
+    const r = createRing(3);
+    const bad = vi.fn(() => { throw new Error("boom"); });
+    const good = vi.fn();
+    r.subscribeClear(bad);
+    r.subscribeClear(good);
+    expect(() => r.clear()).not.toThrow();
+    expect(good).toHaveBeenCalledOnce();
+  });
 });

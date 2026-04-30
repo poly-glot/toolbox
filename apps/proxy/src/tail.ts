@@ -1,11 +1,14 @@
 import type { TailEntry } from "./types.js";
 
 export type Subscriber = (entry: TailEntry) => void;
+export type ClearSubscriber = () => void;
 
 export interface TailRing {
   push(entry: TailEntry): void;
   snapshot(): TailEntry[];
+  clear(): void;
   subscribe(fn: Subscriber): () => void;
+  subscribeClear(fn: ClearSubscriber): () => void;
 }
 
 export function createRing(capacity: number): TailRing {
@@ -14,6 +17,7 @@ export function createRing(capacity: number): TailRing {
   let head = 0;
   let count = 0;
   const subs = new Set<Subscriber>();
+  const clearSubs = new Set<ClearSubscriber>();
 
   return {
     push(entry) {
@@ -37,10 +41,28 @@ export function createRing(capacity: number): TailRing {
       }
       return out;
     },
+    clear() {
+      for (let i = 0; i < buf.length; i++) buf[i] = undefined;
+      head = 0;
+      count = 0;
+      for (const fn of clearSubs) {
+        try {
+          fn();
+        } catch {
+          // swallow subscriber errors
+        }
+      }
+    },
     subscribe(fn) {
       subs.add(fn);
       return () => {
         subs.delete(fn);
+      };
+    },
+    subscribeClear(fn) {
+      clearSubs.add(fn);
+      return () => {
+        clearSubs.delete(fn);
       };
     },
   };

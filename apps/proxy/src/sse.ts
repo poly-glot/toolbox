@@ -41,6 +41,11 @@ export function createSseHandler(deps: SseDeps) {
       }
     });
 
+    const unsubscribeClear = deps.tail.subscribeClear(() => {
+      seen.clear();
+      send("cleared", {});
+    });
+
     // Take snapshot, send it, mark IDs as seen, then drain queue.
     const snap = deps.tail.snapshot();
     for (const e of snap) seen.add(e.id);
@@ -70,6 +75,7 @@ export function createSseHandler(deps: SseDeps) {
     function cleanup(): void {
       clearInterval(interval);
       unsubscribe();
+      unsubscribeClear();
     }
 
     req.on("close", cleanup);

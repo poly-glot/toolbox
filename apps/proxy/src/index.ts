@@ -30,6 +30,13 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === "DELETE" && url === "/tail") {
+    tail.clear();
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (url === "/forward" || url.startsWith("/forward?")) {
     handleForward(req, res);
     return;

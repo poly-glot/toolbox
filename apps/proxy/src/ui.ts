@@ -55,6 +55,7 @@ tr.row.expanded { background:#161b22; }
   <span class="status disconnected" id="status">connecting…</span>
   <button id="pause">Pause</button>
   <button id="clear">Clear view</button>
+  <button id="clearTail" title="Clear server-side tail (affects all viewers)">Clear tail</button>
   <span class="count" id="count">0 entries</span>
 </header>
 <table>
@@ -70,6 +71,7 @@ tr.row.expanded { background:#161b22; }
   var rowsEl   = document.getElementById('rows');
   var pauseBtn = document.getElementById('pause');
   var clearBtn = document.getElementById('clear');
+  var clearTailBtn = document.getElementById('clearTail');
   var paused   = false;
   var entries  = []; // newest first
 
@@ -173,6 +175,12 @@ tr.row.expanded { background:#161b22; }
     pauseBtn.textContent = paused ? 'Resume' : 'Pause';
   });
   clearBtn.addEventListener('click', function () { entries = []; render(); });
+  clearTailBtn.addEventListener('click', function () {
+    clearTailBtn.disabled = true;
+    fetch('tail', { method: 'DELETE' })
+      .catch(function () { /* server will broadcast cleared if it succeeded */ })
+      .then(function () { clearTailBtn.disabled = false; });
+  });
 
   function connect() {
     var es = new EventSource('tail');
@@ -186,6 +194,10 @@ tr.row.expanded { background:#161b22; }
       if (paused) return;
       entries.unshift(JSON.parse(ev.data));
       if (entries.length > 1000) entries.pop();
+      render();
+    });
+    es.addEventListener('cleared', function () {
+      entries = [];
       render();
     });
     es.onopen  = function () { setStatus(true); };

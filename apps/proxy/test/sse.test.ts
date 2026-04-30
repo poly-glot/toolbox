@@ -139,6 +139,49 @@ describe("createSseHandler", () => {
     expect(JSON.parse(events[1].data).id).toBe("x");
   });
 
+  it("emits a 'cleared' event when the ring is cleared", async () => {
+    s = await startSseServer();
+    s.tail.push(makeEntry("a"));
+
+    const ctrl = new AbortController();
+    const respPromise = fetch(s.url, { signal: ctrl.signal });
+
+    // Wait briefly so the connection registers, then clear.
+    await new Promise((r) => setTimeout(r, 50));
+    s.tail.clear();
+
+    const resp = await respPromise;
+    const reader = resp.body!.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    const events: ParsedEvent[] = [];
+
+    const deadline = Date.now() + 2000;
+    while (events.length < 2 && Date.now() < deadline) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf("\n\n")) !== -1) {
+        const block = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        const lines = block.split("\n");
+        let event = "message";
+        let data = "";
+        for (const line of lines) {
+          if (line.startsWith(":")) continue;
+          if (line.startsWith("event: ")) event = line.slice(7);
+          else if (line.startsWith("data: ")) data += (data ? "\n" : "") + line.slice(6);
+        }
+        if (data) events.push({ event, data });
+      }
+    }
+    ctrl.abort();
+
+    expect(events[0].event).toBe("snapshot");
+    expect(events[1].event).toBe("cleared");
+  });
+
   it("emits heartbeat comments at the configured interval", async () => {
     s = await startSseServer({ heartbeatMs: 50 });
     const ctrl = new AbortController();
