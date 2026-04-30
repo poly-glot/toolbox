@@ -77,11 +77,6 @@ jobs:
             | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.annotations)' \
             | kubectl apply --namespace=$NAMESPACE -f -
 
-          # Copy MySQL secret from database namespace to toolbox namespace
-          kubectl get secret mysql-secret --namespace=database -o json \
-            | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.annotations)' \
-            | kubectl apply --namespace=$NAMESPACE -f -
-
           # Copy OCI registry secret if it exists in another namespace
           kubectl get secret ocirsecret --namespace=default -o json \
             | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.annotations)' \

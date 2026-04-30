@@ -37,21 +37,6 @@ spec:
                 secretKeyRef:
                   name: redis-secret
                   key: REDIS_PASSWORD
-            - name: MYSQL_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: app-config
-                  key: MYSQL_HOST
-            - name: MYSQL_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: app-config
-                  key: MYSQL_PORT
-            - name: MYSQL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: password
           envFrom:
             - configMapRef:
                 name: app-config
