@@ -175,15 +175,20 @@ tr.row.expanded { background:#161b22; }
     pauseBtn.textContent = paused ? 'Resume' : 'Pause';
   });
   clearBtn.addEventListener('click', function () { entries = []; render(); });
+
+  // The page itself was served behind PROXY_TAIL_SECRET; forward whatever
+  // ?secret= query the user opened the page with onto the SSE / DELETE calls.
+  var query = window.location.search || '';
+  function tailUrl() { return 'tail' + query; }
   clearTailBtn.addEventListener('click', function () {
     clearTailBtn.disabled = true;
-    fetch('tail', { method: 'DELETE' })
+    fetch(tailUrl(), { method: 'DELETE' })
       .catch(function () { /* server will broadcast cleared if it succeeded */ })
       .then(function () { clearTailBtn.disabled = false; });
   });
 
   function connect() {
-    var es = new EventSource('tail');
+    var es = new EventSource(tailUrl());
     es.addEventListener('snapshot', function (ev) {
       if (paused) return;
       var snap = JSON.parse(ev.data);

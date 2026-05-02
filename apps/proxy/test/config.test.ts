@@ -9,6 +9,7 @@ describe("loadConfig", () => {
     expect(c.tailSize).toBe(500);
     expect(c.bodyCaptureBytes).toBe(65536);
     expect(c.timeoutMs).toBe(30_000);
+    expect(c.tailSecret).toBeNull();
   });
 
   it("respects PROXY_ALLOWED_HOSTS comma list with trimming", () => {
@@ -27,5 +28,14 @@ describe("loadConfig", () => {
     expect(c.tailSize).toBe(10);
     expect(c.bodyCaptureBytes).toBe(65536);
     expect(c.timeoutMs).toBe(1234);
+  });
+
+  it("trims and treats empty PROXY_TAIL_SECRET as null (disabled)", () => {
+    expect(loadConfig({ PROXY_TAIL_SECRET: "" }).tailSecret).toBeNull();
+    expect(loadConfig({ PROXY_TAIL_SECRET: "   " }).tailSecret).toBeNull();
+  });
+
+  it("loads PROXY_TAIL_SECRET when set", () => {
+    expect(loadConfig({ PROXY_TAIL_SECRET: "shh" }).tailSecret).toBe("shh");
   });
 });

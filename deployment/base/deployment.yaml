@@ -37,6 +37,11 @@ spec:
                 secretKeyRef:
                   name: redis-secret
                   key: REDIS_PASSWORD
+            - name: PROXY_TAIL_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: proxy-secret
+                  key: PROXY_TAIL_SECRET
           envFrom:
             - configMapRef:
                 name: app-config

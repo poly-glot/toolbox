@@ -1,55 +1,32 @@
-const HOP_BY_HOP = new Set([
-  "connection",
-  "keep-alive",
-  "te",
-  "transfer-encoding",
-  "trailer",
-  "upgrade",
-  "proxy-authenticate",
-  "proxy-authorization",
-]);
+import type { RawHeaders, DisplayHeaders } from "./types.js";
 
 export type SanitizedHeaders = Record<string, string | string[]>;
 
-export function sanitizeOutboundHeaders(
-  inHeaders: NodeJS.Dict<string | string[]>,
-  targetHost: string,
-): SanitizedHeaders {
-  const out: SanitizedHeaders = {};
-  for (const [name, value] of Object.entries(inHeaders)) {
-    if (value === undefined) continue;
-    const lower = name.toLowerCase();
-    if (
-      HOP_BY_HOP.has(lower) ||
-      lower === "host" ||
-      lower === "x-target" ||
-      lower === "content-length"
-    ) {
-      continue;
-    }
-    out[name] = value;
-  }
-  out.host = targetHost;
-  return out;
+const HOP_BY_HOP = new Set([
+  "connection", "keep-alive", "te", "transfer-encoding", "trailer",
+  "upgrade", "proxy-authenticate", "proxy-authorization",
+]);
+
+const STRIPPED_OUTBOUND = new Set([...HOP_BY_HOP, "host", "x-target", "content-length"]);
+
+const isStrippedOutbound = (name: string): boolean => STRIPPED_OUTBOUND.has(name.toLowerCase());
+const isHopByHop         = (name: string): boolean => HOP_BY_HOP.has(name.toLowerCase());
+const isDefinedEntry     = <V,>(e: [string, V | undefined]): e is [string, V] => e[1] !== undefined;
+
+export function sanitizeOutboundHeaders(headers: RawHeaders, host: string): SanitizedHeaders {
+  const kept = Object.entries(headers).filter(isDefinedEntry).filter(([n]) => !isStrippedOutbound(n));
+  return { ...Object.fromEntries(kept), host };
 }
 
-export function sanitizeInboundHeaders(
-  inHeaders: NodeJS.Dict<string | string[]>,
-): SanitizedHeaders {
-  const out: SanitizedHeaders = {};
-  for (const [name, value] of Object.entries(inHeaders)) {
-    if (value === undefined) continue;
-    const lower = name.toLowerCase();
-    if (HOP_BY_HOP.has(lower)) continue;
-    out[name] = value;
-  }
-  return out;
+export function sanitizeInboundHeaders(headers: RawHeaders): SanitizedHeaders {
+  const kept = Object.entries(headers).filter(isDefinedEntry).filter(([n]) => !isHopByHop(n));
+  return Object.fromEntries(kept);
 }
 
-export function flattenForDisplay(headers: SanitizedHeaders): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [name, value] of Object.entries(headers)) {
-    out[name] = Array.isArray(value) ? value.join(", ") : value;
-  }
-  return out;
-}
+export const flattenForDisplay = (headers: SanitizedHeaders): DisplayHeaders =>
+  Object.fromEntries(
+    Object.entries(headers).map(([n, v]) => [n, Array.isArray(v) ? v.join(", ") : v]),
+  );
+
+export const headerString = (v: string | string[] | undefined): string | null =>
+  v === undefined ? null : Array.isArray(v) ? v[0] ?? null : v;

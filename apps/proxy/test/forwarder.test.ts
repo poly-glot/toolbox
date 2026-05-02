@@ -3,6 +3,7 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { createForwarder } from "../src/forwarder.js";
 import { createRing } from "../src/tail.js";
+import { createRecorder } from "../src/recorder.js";
 import {
   startTargetServer,
   type RunningTarget,
@@ -30,10 +31,12 @@ async function startHarness(opts: {
     tailSize: 50,
     bodyCaptureBytes: 64 * 1024,
     timeoutMs: 5_000,
+    tailSecret: null,
     ...opts.config,
   };
   const tail = createRing(config.tailSize);
-  const handleForward = createForwarder({ config, tail });
+  const recorder = createRecorder(tail);
+  const handleForward = createForwarder({ config, recorder });
 
   const server = http.createServer((req, res) => {
     if (req.url === "/forward" || req.url?.startsWith("/forward?")) {
