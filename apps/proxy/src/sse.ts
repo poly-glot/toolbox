@@ -52,13 +52,12 @@ export function createSseHandler(deps: SseDeps) {
     send("snapshot", snap);
     snapshotSent = true;
 
-    while (queue.length > 0) {
-      const e = queue.shift()!;
-      if (!seen.has(e.id)) {
-        seen.add(e.id);
-        send("entry", e);
-      }
-    }
+    // Safe single-pass dedup: recorder IDs are monotonic per ring, so the queue
+    // cannot contain two entries with the same id between subscribe and snapshot.
+    const fresh = queue.filter((e) => !seen.has(e.id));
+    queue.length = 0;
+    fresh.forEach((e) => seen.add(e.id));
+    fresh.forEach((e) => send("entry", e));
 
     // After drain, post-snapshot entries have unique IDs from the counter;
     // we no longer need the seen set for dedup.

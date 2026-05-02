@@ -1,9 +1,6 @@
 const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
 
-export interface AllowlistOk {
-  ok: true;
-  parsed: URL;
-}
+export interface AllowlistOk { ok: true; parsed: URL; }
 
 export interface AllowlistBad {
   ok: false;
@@ -16,31 +13,21 @@ export interface AllowlistBad {
 
 export type AllowlistResult = AllowlistOk | AllowlistBad;
 
-function isIpLiteral(host: string): boolean {
-  if (host.startsWith("[") && host.endsWith("]")) return true;
-  return IPV4.test(host);
-}
+const tryParseUrl = (raw: string): URL | null => { try { return new URL(raw); } catch { return null; } };
+
+const isHttpScheme = (u: URL): boolean       => u.protocol === "http:" || u.protocol === "https:";
+const isIpLiteral  = (host: string): boolean => host.startsWith("[") || IPV4.test(host);
+
+const matchesApex = (host: string) => (apex: string): boolean => {
+  const lower = apex.toLowerCase();
+  return host === lower || host.endsWith("." + lower);
+};
 
 export function isAllowedTarget(rawUrl: string, allowedHosts: string[]): AllowlistResult {
-  let parsed: URL;
-  try {
-    parsed = new URL(rawUrl);
-  } catch {
-    return { ok: false, reason: "invalid URL" };
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return { ok: false, reason: "scheme must be http or https" };
-  }
-  const host = parsed.hostname;
-  if (isIpLiteral(host)) {
-    return { ok: false, reason: "IP literal not allowed" };
-  }
-  // Note: trailing-dot hostnames (e.g. "storyteq.com.") are intentionally rejected by this exact-match contract.
-  for (const apex of allowedHosts) {
-    const apexLower = apex.toLowerCase();
-    if (host === apexLower || host.endsWith("." + apexLower)) {
-      return { ok: true, parsed };
-    }
-  }
-  return { ok: false, reason: "host not allowed" };
+  const parsed = tryParseUrl(rawUrl);
+  if (!parsed)                                          return { ok: false, reason: "invalid URL" };
+  if (!isHttpScheme(parsed))                            return { ok: false, reason: "scheme must be http or https" };
+  if (isIpLiteral(parsed.hostname))                     return { ok: false, reason: "IP literal not allowed" };
+  if (!allowedHosts.some(matchesApex(parsed.hostname))) return { ok: false, reason: "host not allowed" };
+  return { ok: true, parsed };
 }

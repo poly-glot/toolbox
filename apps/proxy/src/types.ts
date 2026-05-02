@@ -1,3 +1,6 @@
+export type RawHeaders     = NodeJS.Dict<string | string[]>;
+export type DisplayHeaders = Record<string, string>;
+
 export interface BodySnippetText {
   kind: "text";
   bytes: number;

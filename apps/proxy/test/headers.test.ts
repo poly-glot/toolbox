@@ -3,6 +3,7 @@ import {
   sanitizeOutboundHeaders,
   sanitizeInboundHeaders,
   flattenForDisplay,
+  headerString,
 } from "../src/headers.js";
 
 describe("sanitizeOutboundHeaders", () => {
@@ -82,5 +83,17 @@ describe("flattenForDisplay", () => {
     });
     expect(out["set-cookie"]).toBe("a=1, b=2");
     expect(out.accept).toBe("application/json");
+  });
+});
+
+describe("headerString", () => {
+  it("returns null for undefined", () => {
+    expect(headerString(undefined)).toBeNull();
+  });
+
+  it("returns the first element for arrays, else the string", () => {
+    expect(headerString(["first", "second"])).toBe("first");
+    expect(headerString("only")).toBe("only");
+    expect(headerString([])).toBeNull();
   });
 });
