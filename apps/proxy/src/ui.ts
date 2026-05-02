@@ -65,149 +65,145 @@ tr.row.expanded { background:#161b22; }
   <tbody id="rows"></tbody>
 </table>
 <script>
-(function () {
-  var statusEl = document.getElementById('status');
-  var countEl  = document.getElementById('count');
-  var rowsEl   = document.getElementById('rows');
-  var pauseBtn = document.getElementById('pause');
-  var clearBtn = document.getElementById('clear');
-  var clearTailBtn = document.getElementById('clearTail');
-  var paused   = false;
-  var entries  = []; // newest first
+(() => {
+  const statusEl = document.getElementById('status');
+  const countEl  = document.getElementById('count');
+  const rowsEl   = document.getElementById('rows');
+  const pauseBtn = document.getElementById('pause');
+  const clearBtn = document.getElementById('clear');
+  const clearTailBtn = document.getElementById('clearTail');
+  let paused  = false;
+  let entries = []; // newest first
 
-  function statusClass(s) {
+  const statusClass = (s) => {
     if (s == null) return 'serr';
     if (s < 300) return 's2xx';
     if (s < 400) return 's3xx';
     if (s < 500) return 's4xx';
     return 's5xx';
-  }
-  function escape(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-    });
-  }
-  function fmtTime(iso) {
+  };
+  const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+  const fmtTime = (iso) => {
     try { return new Date(iso).toISOString().substring(11, 23); }
-    catch (_) { return iso; }
-  }
-  function bodyToHtml(body) {
+    catch { return iso; }
+  };
+  const bodyToHtml = (body) => {
     if (!body || body.kind === 'empty') return '<span class="muted">(empty)</span>';
     if (body.kind === 'binary') {
       return '<span class="muted">(binary, ' + body.bytes + ' bytes, ' +
-             escape(body.contentType || 'unknown') + ')</span>' +
-             '<pre>' + escape(body.preview) + '</pre>';
+             escapeHtml(body.contentType || 'unknown') + ')</span>' +
+             '<pre>' + escapeHtml(body.preview) + '</pre>';
     }
-    var note = body.truncated ? ' <span class="pill">truncated, ' + body.bytes + ' bytes total</span>' : '';
-    return note + '<pre>' + escape(body.data) + '</pre>';
-  }
-  function headersHtml(h) {
+    const note = body.truncated ? ' <span class="pill">truncated, ' + body.bytes + ' bytes total</span>' : '';
+    return note + '<pre>' + escapeHtml(body.data) + '</pre>';
+  };
+  const headersHtml = (h) => {
     if (!h) return '';
-    var rows = '';
-    Object.keys(h).forEach(function (k) {
-      rows += '<div class="k">' + escape(k) + '</div><div class="v">' + escape(h[k]) + '</div>';
-    });
+    const rows = Object.entries(h)
+      .map(([k, v]) => '<div class="k">' + escapeHtml(k) + '</div><div class="v">' + escapeHtml(v) + '</div>')
+      .join('');
     return '<div class="kv">' + rows + '</div>';
-  }
-  function curlFor(e) {
-    var parts = ['curl', '-X', e.method, JSON.stringify(e.target)];
-    Object.keys(e.request.headers || {}).forEach(function (k) {
-      if (k.toLowerCase() === 'host') return;
-      parts.push('-H', JSON.stringify(k + ': ' + e.request.headers[k]));
-    });
-    var b = e.request.body;
+  };
+  const curlFor = (e) => {
+    const parts = ['curl', '-X', e.method, JSON.stringify(e.target)];
+    for (const [k, v] of Object.entries(e.request.headers ?? {})) {
+      if (k.toLowerCase() === 'host') continue;
+      parts.push('-H', JSON.stringify(k + ': ' + v));
+    }
+    const b = e.request.body;
     if (b && b.kind === 'text' && !b.truncated) {
       parts.push('--data-raw', JSON.stringify(b.data));
     }
     return parts.join(' ');
-  }
-  function detailHtml(e) {
-    var parts = ['<div class="detail-inner">'];
+  };
+  const detailHtml = (e) => {
+    const parts = ['<div class="detail-inner">'];
     parts.push('<h3>request headers</h3>' + headersHtml(e.request.headers));
     parts.push('<h3>request body</h3>' + bodyToHtml(e.request.body));
     if (e.response) {
       parts.push('<h3>response headers</h3>' + headersHtml(e.response.headers));
       parts.push('<h3>response body</h3>' + bodyToHtml(e.response.body));
     }
-    if (e.error) parts.push('<h3>error</h3><pre>' + escape(e.error) + '</pre>');
-    parts.push('<h3>curl (approx)</h3><pre class="curl">' + escape(curlFor(e)) + '</pre>');
+    if (e.error) parts.push('<h3>error</h3><pre>' + escapeHtml(e.error) + '</pre>');
+    parts.push('<h3>curl (approx)</h3><pre class="curl">' + escapeHtml(curlFor(e)) + '</pre>');
     parts.push('</div>');
     return parts.join('');
-  }
-  function rowHtml(e) {
-    var status = e.response ? e.response.status : null;
-    var statusText = status === null
+  };
+  const rowHtml = (e) => {
+    const status = e.response ? e.response.status : null;
+    const statusText = status === null
       ? (e.error || 'error')
       : (status + ' ' + (e.response.statusText || ''));
-    return '<tr class="row" data-id="' + escape(e.id) + '">' +
+    return '<tr class="row" data-id="' + escapeHtml(e.id) + '">' +
            '<td>' + fmtTime(e.startedAt) + '</td>' +
-           '<td><span class="method">' + escape(e.method) + '</span></td>' +
-           '<td class="target">' + escape(e.target) + '</td>' +
-           '<td class="' + statusClass(status) + '">' + escape(statusText) + '</td>' +
+           '<td><span class="method">' + escapeHtml(e.method) + '</span></td>' +
+           '<td class="target">' + escapeHtml(e.target) + '</td>' +
+           '<td class="' + statusClass(status) + '">' + escapeHtml(statusText) + '</td>' +
            '<td>' + e.durationMs + 'ms</td>' +
            '</tr>' +
-           '<tr class="detail" data-detail-for="' + escape(e.id) + '" hidden>' +
+           '<tr class="detail" data-detail-for="' + escapeHtml(e.id) + '" hidden>' +
            '<td colspan="5">' + detailHtml(e) + '</td>' +
            '</tr>';
-  }
-  function render() {
+  };
+  const render = () => {
     rowsEl.innerHTML = entries.map(rowHtml).join('');
     countEl.textContent = entries.length + ' entries';
-    rowsEl.querySelectorAll('tr.row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        var id = row.getAttribute('data-id');
-        var detail = rowsEl.querySelector('tr[data-detail-for="' + id + '"]');
+    rowsEl.querySelectorAll('tr.row').forEach((row) => {
+      row.addEventListener('click', () => {
+        const id = row.getAttribute('data-id');
+        const detail = rowsEl.querySelector('tr[data-detail-for="' + id + '"]');
         if (detail) {
           detail.hidden = !detail.hidden;
           row.classList.toggle('expanded', !detail.hidden);
         }
       });
     });
-  }
-  function setStatus(connected) {
+  };
+  const setStatus = (connected) => {
     statusEl.className = 'status ' + (connected ? 'connected' : 'disconnected');
     statusEl.textContent = connected ? 'connected' : 'disconnected';
-  }
+  };
 
-  pauseBtn.addEventListener('click', function () {
+  pauseBtn.addEventListener('click', () => {
     paused = !paused;
     pauseBtn.classList.toggle('active', paused);
     pauseBtn.textContent = paused ? 'Resume' : 'Pause';
   });
-  clearBtn.addEventListener('click', function () { entries = []; render(); });
+  clearBtn.addEventListener('click', () => { entries = []; render(); });
 
   // The page itself was served behind PROXY_TAIL_SECRET; forward whatever
   // ?secret= query the user opened the page with onto the SSE / DELETE calls.
-  var query = window.location.search || '';
-  function tailUrl() { return 'tail' + query; }
-  clearTailBtn.addEventListener('click', function () {
+  // Resolve "tail" relative to the current page directory so the URL is
+  // correct whether the app is mounted at "/" or behind a prefix like "/proxy".
+  const tailUrl = () => {
+    const dir = location.pathname.endsWith('/') ? location.pathname : location.pathname + '/';
+    return dir + 'tail' + location.search;
+  };
+
+  clearTailBtn.addEventListener('click', async () => {
     clearTailBtn.disabled = true;
-    fetch(tailUrl(), { method: 'DELETE' })
-      .catch(function () { /* server will broadcast cleared if it succeeded */ })
-      .then(function () { clearTailBtn.disabled = false; });
+    try { await fetch(tailUrl(), { method: 'DELETE' }); }
+    finally { clearTailBtn.disabled = false; }
   });
 
-  function connect() {
-    var es = new EventSource(tailUrl());
-    es.addEventListener('snapshot', function (ev) {
+  const connect = () => {
+    const es = new EventSource(tailUrl());
+    es.addEventListener('snapshot', (ev) => {
       if (paused) return;
-      var snap = JSON.parse(ev.data);
-      entries = snap.slice().reverse(); // newest first
+      entries = JSON.parse(ev.data).slice().reverse(); // newest first
       render();
     });
-    es.addEventListener('entry', function (ev) {
+    es.addEventListener('entry', (ev) => {
       if (paused) return;
       entries.unshift(JSON.parse(ev.data));
       if (entries.length > 1000) entries.pop();
       render();
     });
-    es.addEventListener('cleared', function () {
-      entries = [];
-      render();
-    });
-    es.onopen  = function () { setStatus(true); };
-    es.onerror = function () { setStatus(false); /* EventSource auto-reconnects */ };
-  }
+    es.addEventListener('cleared', () => { entries = []; render(); });
+    es.onopen  = () => setStatus(true);
+    es.onerror = () => setStatus(false); // EventSource auto-reconnects
+  };
   connect();
 })();
 </script>
