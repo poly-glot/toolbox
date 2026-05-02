@@ -19,4 +19,4 @@ configMapGenerator:
 images:
 - name: app:latest
   newName: lhr.ocir.io/lrhvckxzwf3l/toolbox
-  newTag: e7a76676fcc4874b57ff32c5775a9cf8f7762af8
+  newTag: 288487c73117d3efec8456a293e3984d0468ef19
