@@ -127,9 +127,12 @@ function serveIndex(res: http.ServerResponse): void {
 
 const server = http.createServer((req, res) => {
   const url = req.url || "/";
+  const queryIdx = url.indexOf("?");
+  const path = queryIdx === -1 ? url : url.slice(0, queryIdx);
+  const query = queryIdx === -1 ? "" : url.slice(queryIdx);
 
   // Health check for the gateway itself
-  if (url === "/health" || url === "/healthz") {
+  if (path === "/health" || path === "/healthz") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
@@ -142,18 +145,18 @@ const server = http.createServer((req, res) => {
   }
 
   // Index page
-  if (url === "/" || url === "") {
+  if (path === "/" || path === "") {
     serveIndex(res);
     return;
   }
 
   // Find matching route
   for (const route of routes) {
-    if (url === route.prefix || url.startsWith(route.prefix + "/")) {
+    if (path === route.prefix || path.startsWith(route.prefix + "/")) {
       // Strip the prefix: /webhook/foo -> /foo
-      // If url is exactly /webhook, rewrite to /
-      const stripped = url.slice(route.prefix.length) || "/";
-      req.url = stripped;
+      // If path is exactly /webhook, rewrite to /
+      const strippedPath = path.slice(route.prefix.length) || "/";
+      req.url = strippedPath + query;
 
       proxy.web(req, res, { target: route.target });
       return;
@@ -165,7 +168,7 @@ const server = http.createServer((req, res) => {
   res.end(
     JSON.stringify({
       error: "Not Found",
-      message: `No app registered for path: ${url}`,
+      message: `No app registered for path: ${path}`,
       availableApps: routes.map((r) => r.prefix),
     }),
   );
