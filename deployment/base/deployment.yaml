@@ -21,7 +21,7 @@ spec:
             - name: PORT
               value: "8080"
             - name: APP_ROUTES
-              value: "webhook:3001,proxy:3002"
+              value: "webhook:3001,proxy:3002,temporaryurl:3003"
             - name: REDIS_HOST
               valueFrom:
                 configMapKeyRef:
@@ -42,6 +42,12 @@ spec:
                 secretKeyRef:
                   name: proxy-secret
                   key: PROXY_TAIL_SECRET
+            - name: TEMPORARYURL_UPLOAD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: TEMPORARYURL_UPLOAD_TOKEN
+                  name: temporaryurl-secret
+                  optional: true
           envFrom:
             - configMapRef:
                 name: app-config
