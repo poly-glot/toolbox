@@ -11,6 +11,9 @@ PORT=3001 node /app/apps/webhook/dist/index.js &
 echo "[entrypoint] Starting proxy on port 3002..."
 PORT=3002 node /app/apps/proxy/dist/index.js &
 
+echo "[entrypoint] Starting temporaryurl on port 3003..."
+PORT=3003 node /app/apps/temporaryurl/dist/index.js &
+
 # Wait a moment for backends to start
 sleep 1
 
